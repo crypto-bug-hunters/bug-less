@@ -17,11 +17,13 @@ import Link from "next/link";
 import { GetLatestState } from "../model/reader";
 import { AppBounty } from "../model/state";
 import { BountyStatusBadge } from "../components/bountyStatus";
+import { BountyStatus } from "../utils/bounty";
 
 const Bounty: FC<{ index: number; bounty: AppBounty }> = ({
     index,
     bounty,
 }) => {
+    const bountyStatus = BountyStatus.EXPIRED;
     return (
         <Anchor href={"/bounty/" + index} underline="never">
             <Card>
@@ -41,7 +43,7 @@ const Bounty: FC<{ index: number; bounty: AppBounty }> = ({
                     </Text>
                 </Box>
                 <Group justify="right">
-                    <BountyStatusBadge bounty={bounty} />
+                    <BountyStatusBadge bountyStatus={bountyStatus} />
                 </Group>
             </Card>
         </Anchor>

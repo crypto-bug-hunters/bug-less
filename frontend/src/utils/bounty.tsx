@@ -1,4 +1,7 @@
 import { AppBounty } from "../model/state";
+import { useEffect, useState } from 'react';
+import { getBlock } from 'viem'
+import { usePublicClient } from 'wagmi'
 
 export enum BountyStatus {
     ACTIVE,
@@ -6,12 +9,24 @@ export enum BountyStatus {
     EXPIRED,
 }
 
-export function getBountyStatus(bounty: AppBounty): BountyStatus {
-    if (bounty.Exploit) return BountyStatus.EXPLOITED;
+export function useBlockTimestamp() {
+    const [timestamp, setTimestamp] = useState<bigint>();
+    const publicClient = usePublicClient();
+    useEffect(() => {
+        publicClient.getBlock().then((block) => {
+            setTimestamp(block.timestamp);
+        });
+    }, [publicClient]);
+    return timestamp;
+};
 
-    const dateDiff = bounty.Deadline * 1000 - new Date().getTime();
+export function useBountyStatus(bounty: AppBounty): BountyStatus {
+    if (bounty.Exploit)
+        return BountyStatus.EXPLOITED;
 
-    if (dateDiff < 0) return BountyStatus.EXPIRED;
+    const timestamp = useBlockTimestamp();
 
-    return BountyStatus.ACTIVE;
+    return (timestamp < bounty.Deadline)
+        ? BountyStatus.ACTIVE
+        : BountyStatus.EXPIRED;
 }

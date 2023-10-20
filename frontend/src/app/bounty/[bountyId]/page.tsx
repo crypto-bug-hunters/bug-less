@@ -30,7 +30,7 @@ import { useInputBoxAddInput } from "../../../hooks/contracts";
 
 import { BountyParams, InvalidBountyId } from "./utils";
 import { CodeWithCopyButton } from "../../../components/copy";
-import { BountyStatus, getBountyStatus } from "../../../utils/bounty";
+import { useBlockTimestamp, BountyStatus } from "../../../utils/bounty";
 import { BountyStatusBadge } from "../../../components/bountyStatus";
 import { Profile } from "../../../components/profile";
 
@@ -96,8 +96,9 @@ const BountyInfoPage: FC<BountyParams> = ({ params: { bountyId } }) => {
         case "success":
             const bounty = result.response;
             const profile = bounty.Developer;
-            const bountyStatus = getBountyStatus(bounty);
-            const isActive = bountyStatus == BountyStatus.ACTIVE;
+            console.log(useBlockTimestamp());
+            const bountyStatus = BountyStatus.EXPIRED;
+            const isActive = bountyStatus === BountyStatus.ACTIVE;
             const enableWithdrawals = bountyStatus === BountyStatus.EXPIRED;
             const totalPrize = getBountyTotalPrize(bounty);
             return (
@@ -111,9 +112,6 @@ const BountyInfoPage: FC<BountyParams> = ({ params: { bountyId } }) => {
                                 fallbackSrc="/static/default_app.webp"
                             />
                             {bounty.Description}
-                            <Group>
-                                <BountyStatusBadge status={bountyStatus} />
-                            </Group>
                             <Title order={3}>
                                 Total Prize: {formatEther(totalPrize)} ETH
                             </Title>
