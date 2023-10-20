@@ -32,6 +32,7 @@ import { BountyParams, InvalidBountyId } from "./utils";
 import { CodeWithCopyButton } from "../../../components/copy";
 import { BountyStatus, getBountyStatus } from "../../../utils/bounty";
 import { BountyStatusBadge } from "../../../components/bountyStatus";
+import { Profile } from "../../../components/profile";
 
 const Avatar: FC<{
     src: string;
@@ -51,27 +52,13 @@ const Sponsorship: FC<{
     sponsorship: Sponsorship;
 }> = ({ sponsorship }) => {
     return (
-        <Card radius="md" shadow="sm">
-            <Stack p={20}>
-                <Group gap="lg">
-                    <Avatar
-                        src={sponsorship.Sponsor.ImgLink}
-                        altseed={sponsorship.Sponsor.Address}
-                    />
-                    <Stack>
-                        <Text fw={500} size="lg">
-                            {sponsorship.Sponsor.Name}
-                            <CodeWithCopyButton
-                                value={sponsorship.Sponsor.Address}
-                            />
-                        </Text>
-                        <Text fw={700} size="xl" c="dimmend">
-                            {formatEther(BigInt(sponsorship.Value))} ETH
-                        </Text>
-                    </Stack>
-                </Group>
-            </Stack>
-        </Card>
+        <Profile
+            profile={ sponsorship.Sponsor }
+            badge="Sponsor"
+            badgeColor="purple"
+        >
+            {formatEther(BigInt(sponsorship.Value))} ETH
+        </Profile>
     );
 };
 
@@ -109,8 +96,9 @@ const BountyInfoPage: FC<BountyParams> = ({ params: { bountyId } }) => {
         case "success":
             const bounty = result.response;
             const profile = bounty.Developer;
-            const status = getBountyStatus(bounty);
-            const enableWithdrawals = status === BountyStatus.EXPIRED;
+            const bountyStatus = getBountyStatus(bounty);
+            const isActive = bountyStatus == BountyStatus.ACTIVE;
+            const enableWithdrawals = bountyStatus === BountyStatus.EXPIRED;
             const totalPrize = getBountyTotalPrize(bounty);
             return (
                 <Center>
@@ -124,58 +112,41 @@ const BountyInfoPage: FC<BountyParams> = ({ params: { bountyId } }) => {
                             />
                             {bounty.Description}
                             <Group>
-                                <BountyStatusBadge bounty={bounty} />
+                                <BountyStatusBadge status={bountyStatus} />
                             </Group>
                             <Title order={3}>
                                 Total Prize: {formatEther(totalPrize)} ETH
                             </Title>
-                            {status === BountyStatus.ACTIVE && (
-                                <>
-                                    <Group justify="left">
-                                        <Link
-                                            href={
-                                                "/bounty/" +
-                                                bountyId +
-                                                "/sponsor"
-                                            }
-                                        >
-                                            <Button>Sponsor</Button>
-                                        </Link>
-                                        <Link
-                                            href={
-                                                "/bounty/" +
-                                                bountyId +
-                                                "/exploit"
-                                            }
-                                        >
-                                            <Button>Submit exploit</Button>
-                                        </Link>
-                                        {enableWithdrawals && (
-                                            <Button onClick={write}>
-                                                Withdraw
-                                            </Button>
-                                        )}
-                                    </Group>
-                                </>
-                            )}
-                            {status === BountyStatus.EXPLOITED && (
-                                <>
-                                    <Title order={2}>Exploited by </Title>
-                                    <Avatar
-                                        src={bounty.Exploit?.Hacker.ImgLink}
-                                        altseed={bounty.Exploit?.Hacker.Address}
-                                    />
-                                    <Title order={1}>
-                                        {bounty.Exploit?.Hacker.Name}
-                                    </Title>
-                                    <CodeWithCopyButton
-                                        value={bounty.Exploit?.Hacker.Address}
-                                    />
-                                </>
-                            )}
+                            <Group justify="left">
+                                <Button
+                                    component="a"
+                                    href={`/bounty/${bountyId}/sponsor`}
+                                    data-disabled={!isActive}
+                                    onClick={(event) => event.preventDefault()}
+                                >
+                                    Sponsor
+                                </Button>
+                                <Button
+                                    component="a"
+                                    href={`/bounty/${bountyId}/exploit`}
+                                    data-disabled={!isActive}
+                                    onClick={(event) => event.preventDefault()}
+                                >
+                                    Submit exploit
+                                </Button>
+                                <Button onClick={write}>
+                                    Withdraw
+                                </Button>
+                            </Group>
                             <Title order={2} mt={50}>
-                                Sponsorships
+                                Participants
                             </Title>
+                            {bounty.Exploit && (
+                                <Profile
+                                    profile={bounty.Exploit?.Hacker}
+                                    badge="Exploiter"
+                                />
+                            )}
                             <SponsorshipList
                                 sponsorships={bounty.Sponsorships}
                             />
