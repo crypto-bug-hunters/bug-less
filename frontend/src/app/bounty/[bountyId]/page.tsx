@@ -147,9 +147,9 @@ const BountyInfoPage: FC<BountyParams> = ({ params: { bountyId } }) => {
                                     badge="Exploiter"
                                 />
                             )}
-                            <SponsorshipList
+                            {bounty.Sponsorships && (<SponsorshipList
                                 sponsorships={bounty.Sponsorships}
-                            />
+                            />)}
                         </Stack>
                     </Box>
                 </Center>
