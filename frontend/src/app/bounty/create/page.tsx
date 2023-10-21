@@ -1,6 +1,5 @@
 "use client";
 import { FC, useState, useRef, useEffect } from "react";
-
 import {
     Box,
     Button,
@@ -20,13 +19,26 @@ import { Dropzone, FileWithPath } from "@mantine/dropzone";
 import { TbExclamationCircle, TbUpload } from "react-icons/tb";
 
 import {
+    inputBoxABI,
     useInputBoxAddInput,
+    useInputBoxInputAddedEvent,
     usePrepareInputBoxAddInput,
 } from "../../../hooks/contracts";
-import { Address, bytesToHex, toHex, Hex } from "viem";
-import { useWaitForTransaction } from "wagmi";
+import {
+    Address,
+    bytesToHex,
+    toHex,
+    Hex,
+    hexToString,
+    decodeEventLog,
+    TransactionReceipt,
+} from "viem";
+import { useContractEvent, useWaitForTransaction } from "wagmi";
 import { CreateBounty } from "../../../model/inputs";
 import { usePrepareCreateBounty } from "../../../hooks/bugless";
+import { InputBox } from "@cartesi/rollups";
+import { IsInputReady } from "../../../model/reader";
+import { Transaction } from "@apollo/client";
 
 const CreateBountyPage: FC = () => {
     const dapp = process.env.NEXT_PUBLIC_DAPP_ADDRESS as Address;
@@ -67,9 +79,41 @@ const CreateBountyPage: FC = () => {
     const config = usePrepareCreateBounty(bounty);
 
     const { data, write } = useInputBoxAddInput(config);
-    const { isLoading, isSuccess } = useWaitForTransaction({
+
+    const {
+        isLoading,
+        isSuccess,
+        data: transactionReceipt,
+    } = useWaitForTransaction({
         hash: data?.hash,
     });
+
+    const getInputIndex = (
+        transactionReceipt: TransactionReceipt | undefined,
+    ): any => {
+        if (!transactionReceipt) return;
+        
+        return transactionReceipt?.logs
+            .map((log) => {
+                return decodeEventLog({
+                    abi: inputBoxABI,
+                    topics: log.topics,
+                    strict: false,
+                });
+            })
+            .filter((event) => {
+                return event.eventName === "InputAdded";
+            })
+            .map((event) => {
+                return event.args.inputIndex;
+            });
+    };
+
+    const inputIndex:bigint|undefined = getInputIndex(transactionReceipt);
+    //console.log(`Input index : ${inputIndex}`);
+
+    const isInputReady = IsInputReady(Number(inputIndex));
+    //console.log(`Is input ready ${isInputReady?.kind}`);
 
     function submit() {
         if (write) write();
@@ -171,7 +215,15 @@ const CreateBountyPage: FC = () => {
                             {isLoading ? "Creating Bounty..." : "Create Bounty"}
                         </Button>
                     </Group>
-
+                    {(isSuccess || isLoading) && (
+                        <>
+                            <Group justify="Center">
+                                <Text size="small">
+                                    Transaction Hash : {data?.hash}
+                                </Text>
+                            </Group>
+                        </>
+                    )}
                     {isSuccess && (
                         <>
                             <Group justify="center">
@@ -179,6 +231,19 @@ const CreateBountyPage: FC = () => {
                                     Bounty transaction successful!
                                 </Text>
                             </Group>
+                             {!!isInputReady &&
+                                isInputReady.kind === "success" && (
+                                    <>
+                                        <Group justify="center">
+                                            <Text size="lg">
+                                                {isInputReady.response
+                                                    ? "Input Accepted"
+                                                    : "Input Rejected"}
+                                            </Text>
+                                        </Group>
+                                    </>
+                                )} 
+                                
                         </>
                     )}
                 </Stack>
